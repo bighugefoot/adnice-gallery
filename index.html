@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>광고나이스 · 레퍼런스 갤러리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--blue:#3b6ef5;--bg:#0e1116;--card:#171b22;--line:#242a34;--txt:#e9edf5;--sub:#9aa5b6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Pretendard,-apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+header{padding:20px 16px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(14,17,22,.96);backdrop-filter:blur(8px);z-index:20}
+h1{margin:0 0 6px;font-size:19px;font-weight:800;letter-spacing:-.3px}
+.meta{font-size:12px;color:var(--sub)}
+.howto{margin-top:10px;font-size:13px;line-height:1.5;background:#141d33;border:1px solid #23325c;border-radius:10px;padding:10px 12px}
+.howto b{color:#8fb0ff}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:10px 16px 4px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;font-size:13px;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:#12161d;color:var(--sub);cursor:pointer}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+main{padding:10px 12px 110px;display:grid;gap:14px;grid-template-columns:1fr;max-width:1200px;margin:0 auto}
+@media(min-width:720px){main{grid-template-columns:1fr 1fr}}
+@media(min-width:1080px){main{grid-template-columns:1fr 1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.card.picked{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.media{position:relative;background:#000;height:min(52vh,400px);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.media video,.media img{width:100%;height:100%;object-fit:contain;display:block}
+.badges{position:absolute;top:8px;left:8px;display:flex;gap:5px;flex-wrap:wrap;pointer-events:none}
+.badge{font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.66);color:#fff}
+.badge.hot{background:var(--blue)}
+.b{padding:12px 13px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.who{font-size:12px;color:var(--sub);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hook{font-size:15px;font-weight:800;line-height:1.42;letter-spacing:-.2px;white-space:pre-wrap}
+.why{font-size:13px;line-height:1.5;color:#c9d6f0;background:#141d33;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:8px 10px}
+details{font-size:12.5px;color:var(--sub)}
+details summary{cursor:pointer;color:#7f8da5;padding:2px 0}
+details pre{white-space:pre-wrap;font-family:inherit;margin:6px 0 0;line-height:1.5;color:#b4bfd0}
+.row{display:flex;gap:8px;margin-top:auto;padding-top:4px}
+.btn{flex:1;text-align:center;font-size:13.5px;font-weight:700;padding:10px 0;border-radius:9px;border:1px solid var(--line);background:#12161d;color:var(--txt);text-decoration:none;cursor:pointer}
+.btn.pick.on{background:var(--blue);border-color:var(--blue);color:#fff}
+footer{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(14,17,22,.97);border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;z-index:30}
+#cnt{font-size:13.5px;font-weight:700;flex:1}
+#copy{font-size:14px;font-weight:800;padding:12px 18px;border-radius:10px;border:0;background:var(--blue);color:#fff}
+#copy:disabled{opacity:.35}
+.empty{grid-column:1/-1;text-align:center;color:var(--sub);padding:40px 0;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>광고나이스 · 레퍼런스 갤러리</h1>
+  <div class="meta" id="meta">불러오는 중…</div>
+  <div class="howto">마음에 드는 것에 <b>★ 고르기</b>를 누르세요. 다 고른 뒤 맨 아래 <b>고른 것 복사</b>를 눌러 카톡으로 보내주시면 그걸로 기획에 들어갑니다.</div>
+</header>
+<div class="chips" id="chips"></div>
+<main id="grid"></main>
+<footer><span id="cnt">0개 선택</span><button id="copy" disabled>고른 것 복사</button></footer>
+<script>
+const KEY='gwangjonice_pick_v1';
+let picked=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));
+let DATA=[],cat='전체';
+const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function save(){localStorage.setItem(KEY,JSON.stringify([...picked]));
+  document.getElementById('cnt').textContent=picked.size+'개 선택';
+  document.getElementById('copy').disabled=picked.size===0;}
+function render(){
+  const g=document.getElementById('grid');
+  const list=DATA.filter(d=>cat==='전체'||d.cat===cat||(cat==='고른 것'&&picked.has(d.id)));
+  g.innerHTML=list.length?'':'<div class="empty">해당하는 레퍼런스가 없습니다.</div>';
+  list.forEach(d=>{
+    const el=document.createElement('div');
+    el.className='card'+(picked.has(d.id)?' picked':'');
+    const media=d.video
+      ? `<video src="${d.video}" ${d.thumb?`poster="${d.thumb}"`:''} controls playsinline preload="none"></video>`
+      : (d.thumb?`<img src="${d.thumb}" loading="lazy" alt="">`:'<div style="color:#555;font-size:13px">영상 없음</div>');
+    el.innerHTML=`
+      <div class="media">${media}
+        <div class="badges">
+          ${d.views?`<span class="badge hot">조회 ${(d.views/10000>=1?(d.views/10000).toFixed(1)+'만':d.views.toLocaleString())}</span>`:''}
+          ${d.days?(d.days>=30?`<span class="badge hot">집행 ${d.days}일째</span>`:`<span class="badge">집행 ${d.days}일째</span>`):''}
+          ${d.dur?`<span class="badge">${d.dur}초</span>`:''}
+          ${d.coll>1?`<span class="badge">변형 ${d.coll}개</span>`:''}
+          ${d.likes?`<span class="badge">좋아요 ${d.likes.toLocaleString()}</span>`:''}
+        </div>
+      </div>
+      <div class="b">
+        <div class="who"><span>${esc(d.page)}</span><span>·</span><span>${d.cat}</span></div>
+        <div class="hook">${esc(d.hook||d.title||(d.body||'').split('\n')[0])}</div>
+        <div class="why">${esc(d.why)}</div>
+        <details><summary>${d.cat==='인스타 릴스'?'캡션 보기':'광고 본문 보기'}</summary><pre>${esc(d.body)}</pre>
+          <pre style="color:#7f8da5">CTA: ${esc(d.cta||'-')} · 시작 ${esc(d.start)}</pre></details>
+        <div class="row">
+          <button class="btn pick ${picked.has(d.id)?'on':''}">${picked.has(d.id)?'★ 고름':'☆ 고르기'}</button>
+          <a class="btn" href="${d.src}" target="_blank" rel="noopener">원본</a>
+        </div>
+      </div>`;
+    el.querySelector('.pick').onclick=()=>{
+      picked.has(d.id)?picked.delete(d.id):picked.add(d.id);save();render();};
+    g.appendChild(el);
+  });
+}
+document.getElementById('copy').onclick=async()=>{
+  const lines=DATA.filter(d=>picked.has(d.id)).map((d,i)=>`${i+1}. [${d.cat}] ${d.page} — ${(d.hook||d.title||'').replace(/\n/g,' ')}\n   ${d.src}`);
+  const txt='광고나이스 레퍼런스 선택 '+picked.size+'개\n\n'+lines.join('\n');
+  try{await navigator.clipboard.writeText(txt);alert('복사했습니다. 카톡에 붙여넣기 해주세요.');}
+  catch(e){prompt('아래를 길게 눌러 복사하세요',txt);}
+};
+fetch('data.json?v='+Date.now()).then(r=>r.json()).then(d=>{
+  DATA=d;
+  const cats=['전체',...[...new Set(d.map(x=>x.cat))],'고른 것'];
+  const c=document.getElementById('chips');
+  cats.forEach(x=>{const b=document.createElement('button');b.className='chip'+(x==='전체'?' on':'');b.textContent=x;
+    b.onclick=()=>{cat=x;[...c.children].forEach(n=>n.classList.toggle('on',n===b));render();};c.appendChild(b);});
+  document.getElementById('meta').textContent=`지금 돌고 있는 한국 광고 ${d.filter(x=>x.cat!=='인스타 릴스').length}개 + 사주 릴스 ${d.filter(x=>x.cat==='인스타 릴스').length}개 · 수집 2026-09-22`;
+  save();render();
+});
+</script>
+</body>
+</html>
